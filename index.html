@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-bar {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+
+        .status-indicator.offline {
+            background: #f44336;
+        }
+
+        .upload-section {
+            margin-bottom: 40px;
+        }
+
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f0f0;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8e4f3;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin: 10px 0;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .file-list {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .file-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .file-remove {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .results-section {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .result-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-card.fake {
+            border-left-color: #f44336;
+        }
+
+        .result-card.real {
+            border-left-color: #4CAF50;
+        }
+
+        .result-card.uncertain {
+            border-left-color: #FF9800;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-filename {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .result-type {
+            display: inline-block;
+            background: #e0e0e0;
+            color: #333;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .confidence-bar {
+            background: #e0e0e0;
+            border-radius: 5px;
+            height: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FF9800, #f44336);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .prediction-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .prediction-badge.FAKE {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .prediction-badge.REAL {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .prediction-badge.UNCERTAIN {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .result-details {
+                grid-template-columns: 1fr;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 Deepfake Detection System</h1>
+            <p>Analyze images and videos to detect deepfakes and manipulated content</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Checking server...</span>
+            </div>
+            <div class="status-item">
+                <span id="serverURL">http://localhost:5000</span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="single">Single File</button>
+            <button class="tab" data-tab="batch">Batch Upload</button>
+            <button class="tab" data-tab="info">Model Info</button>
+        </div>
+
+        <!-- Single File Tab -->
+        <div id="single" class="tab-content active">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2>Upload Media File</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p><strong>Click to upload or drag and drop</strong></p>
+                    <p style="font-size: 0.9em; color: #999;">Supported: JPG, PNG, MP4, AVI (Max 100MB)</p>
+                </div>
+                <input type="file" id="fileInput" accept="image/*,video/*">
+            </div>
+
+            <!-- Message Areas -->
+            <div id="singleMessage"></div>
+
+            <!-- Uploaded File -->
+            <div id="uploadedFile"></div>
+
+            <!-- Analyze Button -->
+            <div class="button-group">
+                <button class="btn-primary" id="analyzeBtn" disabled>Analyze File</button>
+                <button class="btn-secondary" id="clearBtn">Clear</button>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <h2>Analysis Results</h2>
+                <div id="resultsList"></div>
+            </div>
+        </div>
+
+        <!-- Batch Tab -->
+        <div id="batch" class="tab-content">
+            <div class="upload-section">
+                <h2>Batch Upload Multiple Files</h2>
+                <div class="upload-area" id="batchUploadArea">
+                    <div class="upload-icon">📦</div>
+                    <p><strong>Click to upload multiple files or drag and drop</strong></p>
+                    <p style="font-size: 0.9em; color: #999;">Select multiple images/videos at once</p>
+                </div>
+                <input type="file" id="batchFileInput" accept="image/*,video/*" multiple>
+            </div>
+
+            <div id="batchMessage"></div>
+
+            <div class="file-list" id="fileList" style="display: none;">
+                <h3>Selected Files:</h3>
+                <div id="fileItems"></div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" id="batchAnalyzeBtn" disabled>Analyze All Files</button>
+                <button class="btn-secondary" id="batchClearBtn">Clear All</button>
+            </div>
+
+            <div class="results-section" id="batchResultsSection">
+                <h2>Batch Results</h2>
+                <div id="batchResultsList"></div>
+            </div>
+        </div>
+
+        <!-- Model Info Tab -->
+        <div id="info" class="tab-content">
+            <div class="upload-section">
+                <h2>Model Information</h2>
+                <button class="btn-primary" id="getInfoBtn">Get Model Info</button>
+            </div>
+            <div id="infoMessage"></div>
+            <div id="infoContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        // ==================== Utility Functions ====================
+
+        function updateStatus() {
+            fetch(`${API_URL}/health`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('statusIndicator').classList.remove('offline');
+                    document.getElementById('statusText').textContent = '✅ Server Connected';
+                })
+                .catch(() => {
+                    document.getElementById('statusIndicator').classList.add('offline');
+                    document.getElementById('statusText').textContent = '❌ Server Offline';
+                });
+        }
+
+        function showMessage(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}-message">${message}</div>`;
+        }
+
+        function showError(elementId, message) {
+            showMessage(elementId, message, 'error');
+        }
+
+        // ==================== Single File Upload ====================
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        let selectedFile = null;
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            const uploadedFile = document.getElementById('uploadedFile');
+            uploadedFile.innerHTML = `
+                <div class="file-item">
+                    <span class="file-name">📄 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                </div>
+            `;
+            document.getElementById('analyzeBtn').disabled = false;
+            document.getElementById('singleMessage').innerHTML = '';
+        }
+
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const isVideo = selectedFile.type.startsWith('video');
+            const endpoint = isVideo ? '/analyze-video' : '/analyze-image';
+
+            showMessage('singleMessage', '⏳ Analyzing file...', 'success');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult(data);
+                    document.getElementById('resultsSection').classList.add('show');
+                    showMessage('singleMessage', '✅ Analysis complete!', 'success');
+                } else {
+                    showError('singleMessage', `Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                showError('singleMessage', `Error: ${err.message}`);
+            } finally {
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        });
+
+        function displayResult(data) {
+            const resultsList = document.getElementById('resultsList');
+            const prediction = data.prediction || 'UNKNOWN';
+            const confidence = (data.confidence * 100).toFixed(1);
+
+            let html = `<div class="result-card ${prediction.toLowerCase()}">
+                <div class="result-header">
+                    <span class="result-filename">${data.image_path || data.video_path || 'Result'}</span>
+                    <span class="prediction-badge ${prediction}">${prediction}</span>
+                </div>
+                <div class="result-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Confidence</div>
+                        <div class="detail-value">${confidence}%</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${confidence}%">${confidence}%</div>
+                        </div>
+                    </div>`;
+
+            if (data.faces_detected !== undefined) {
+                html += `<div class="detail-item">
+                    <div class="detail-label">Faces Detected</div>
+                    <div class="detail-value">${data.faces_detected}</div>
+                </div>`;
+            }
+
+            if (data.overall_confidence !== undefined) {
+                html += `<div class="detail-item">
+                    <div class="detail-label">Overall Confidence</div>
+                    <div class="detail-value">${(data.overall_confidence * 100).toFixed(1)}%</div>
+                </div>`;
+            }
+
+            if (data.fake_frame_ratio !== undefined) {
+                html += `<div class="detail-item">
+                    <div class="detail-label">Fake Frames</div>
+                    <div class="detail-value">${(data.fake_frame_ratio * 100).toFixed(1)}%</div>
+                </div>`;
+            }
+
+            html += `<div class="detail-item">
+                    <div class="detail-label">Processing Time</div>
+                    <div class="detail-value">${data.processing_time ? data.processing_time.toFixed(2) + 's' : 'N/A'}</div>
+                </div>
+            </div></div>`;
+
+            resultsList.innerHTML = html;
+        }
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('uploadedFile').innerHTML = '';
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('singleMessage').innerHTML = '';
+        });
+
+        // ==================== Batch Upload ====================
+
+        const batchUploadArea = document.getElementById('batchUploadArea');
+        const batchFileInput = document.getElementById('batchFileInput');
+        let batchFiles = [];
+
+        batchUploadArea.addEventListener('click', () => batchFileInput.click());
+        batchUploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            batchUploadArea.classList.add('dragover');
+        });
+        batchUploadArea.addEventListener('dragleave', () => {
+            batchUploadArea.classList.remove('dragover');
+        });
+        batchUploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            batchUploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                batchFileInput.files = e.dataTransfer.files;
+                handleBatchFileSelect(e.dataTransfer.files);
+            }
+        });
+
+        batchFileInput.addEventListener('change', e => {
+            handleBatchFileSelect(e.target.files);
+        });
+
+        function handleBatchFileSelect(files) {
+            batchFiles = Array.from(files);
+            const fileList = document.getElementById('fileList');
+            const fileItems = document.getElementById('fileItems');
+
+            fileItems.innerHTML = '';
+            batchFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <span class="file-name">📄 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    <button class="file-remove" onclick="removeBatchFile(${index})">Remove</button>
+                `;
+                fileItems.appendChild(item);
+            });
+
+            fileList.style.display = batchFiles.length > 0 ? 'block' : 'none';
+            document.getElementById('batchAnalyzeBtn').disabled = batchFiles.length === 0;
+        }
+
+        function removeBatchFile(index) {
+            batchFiles.splice(index, 1);
+            handleBatchFileSelect(batchFiles);
+        }
+
+        document.getElementById('batchAnalyzeBtn').addEventListener('click', async () => {
+            if (batchFiles.length === 0) return;
+
+            const formData = new FormData();
+            batchFiles.forEach(file => formData.append('files', file));
+
+            showMessage('batchMessage', '⏳ Analyzing files...', 'success');
+            document.getElementById('batchAnalyzeBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/batch-analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayBatchResults(data.results || []);
+                    document.getElementById('batchResultsSection').style.display = 'block';
+                    showMessage('batchMessage', `✅ Analyzed ${data.total_files} files!`, 'success');
+                } else {
+                    showError('batchMessage', `Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                showError('batchMessage', `Error: ${err.message}`);
+            } finally {
+                document.getElementById('batchAnalyzeBtn').disabled = false;
+            }
+        });
+
+        function displayBatchResults(results) {
+            const resultsList = document.getElementById('batchResultsList');
+            resultsList.innerHTML = results.map(result => {
+                const prediction = result.prediction || 'UNKNOWN';
+                const confidence = result.confidence ? (result.confidence * 100).toFixed(1) : '0';
+
+                return `<div class="result-card ${prediction.toLowerCase()}">
+                    <div class="result-header">
+                        <span class="result-filename">${result.filename}</span>
+                        <span class="result-type">${result.type || 'unknown'}</span>
+                        <span class="prediction-badge ${prediction}">${prediction}</span>
+                    </div>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Confidence</div>
+                            <div class="detail-value">${confidence}%</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('batchClearBtn').addEventListener('click', () => {
+            batchFiles = [];
+            batchFileInput.value = '';
+            document.getElementById('fileList').style.display = 'none';
+            document.getElementById('fileItems').innerHTML = '';
+            document.getElementById('batchAnalyzeBtn').disabled = true;
+            document.getElementById('batchResultsSection').style.display = 'none';
+            document.getElementById('batchMessage').innerHTML = '';
+        });
+
+        // ==================== Model Info ====================
+
+        document.getElementById('getInfoBtn').addEventListener('click', async () => {
+            showMessage('infoMessage', '⏳ Loading model information...', 'success');
+
+            try {
+                const response = await fetch(`${API_URL}/model-info`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const infoContent = document.getElementById('infoContent');
+                    infoContent.innerHTML = `
+                        <div class="result-card">
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                    showMessage('infoMessage', '✅ Model information loaded!', 'success');
+                } else {
+                    showError('infoMessage', `Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                showError('infoMessage', `Error: ${err.message}`);
+            }
+        });
+
+        // ==================== Tab Navigation ====================
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // ==================== Initialize ====================
+
+        updateStatus();
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

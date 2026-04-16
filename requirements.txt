@@ -1,0 +1,29 @@
+# Core Dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+opencv-contrib-python>=4.5.0
+
+# Deep Learning Frameworks
+torch>=1.9.0
+torchvision>=0.10.0
+
+# Face Detection
+mediapipe>=0.8.0
+dlib>=19.24.0
+
+# Web Framework
+Flask>=2.0.0
+Werkzeug>=2.0.0
+
+# Utilities
+Pillow>=8.3.0
+scikit-image>=0.18.0
+
+# Development
+pytest>=6.2.0
+black>=21.0
+flake8>=3.9.0
+
+# Optional: For GPU support
+# tensorflow-gpu>=2.6.0
+# torch-cuda  # For CUDA support
